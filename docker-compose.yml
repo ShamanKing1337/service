@@ -1,0 +1,17 @@
+version: "3"
+services:
+  go-docker-image:
+    build: ./
+    ports:
+      - '4000:4000'
+    volumes:
+      - ./:/app
+  db:
+    image: postgres
+    restart: always
+    environment:
+      - POSTGRES_PASSWORD=zopa123
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=stage
+    ports:
+      - ${POSTGRES_PORT:-5432}:5432
