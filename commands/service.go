@@ -25,6 +25,7 @@ type patient struct {
 	gender     string
 	password   string
 	birth_date string
+	message    string
 }
 
 type Jpatient struct {
@@ -60,7 +61,7 @@ func home(w http.ResponseWriter, r *http.Request) {
 // Обработчик для отображения содержимого заметки.
 func showSnippet(w http.ResponseWriter, r *http.Request) {
 
-	connStr := "user=postgres password=zopa123 dbname=postgres sslmode=disable host=db"
+	connStr := "user=postgres password=zopa123 dbname=postgres sslmode=disable host=localhost"
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		panic(err)
@@ -110,7 +111,7 @@ func register(w http.ResponseWriter, r *http.Request) {
 		panic(err1)
 	}
 
-	connStr := "user=postgres password=zopa123 dbname=postgres sslmode=disable host=db"
+	connStr := "user=postgres password=zopa123 dbname=postgres sslmode=disable host=localhost"
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		panic(err)
@@ -132,7 +133,7 @@ func adddoctor(w http.ResponseWriter, r *http.Request) {
 		panic(err1)
 	}
 
-	connStr := "user=postgres password=zopa123 dbname=postgres sslmode=disable host=db"
+	connStr := "user=postgres password=zopa123 dbname=postgres sslmode=disable host=127.0.0.1"
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		panic(err)
@@ -184,7 +185,7 @@ func changedoctor(w http.ResponseWriter, r *http.Request) {
 		panic(err1)
 	}
 
-	connStr := "user=postgres password=zopa123 dbname=postgres sslmode=disable host=db"
+	connStr := "user=postgres password=zopa123 dbname=postgres sslmode=disable host=localhost"
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		panic(err)
@@ -210,7 +211,7 @@ func deletedoctor(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	connStr := "user=postgres password=zopa123 dbname=postgres sslmode=disable host=db"
+	connStr := "user=postgres password=zopa123 dbname=postgres sslmode=disable host=localhost"
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		panic(err)
@@ -228,7 +229,7 @@ func deletedoctor(w http.ResponseWriter, r *http.Request) {
 
 func getAllDoctors(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("popa")
-	connStr := "user=postgres password=zopa123 dbname=postgres sslmode=disable host=db"
+	connStr := "user=postgres password=zopa123 dbname=postgres sslmode=disable host=localhost"
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		panic(err)
@@ -258,7 +259,7 @@ func getAllDoctors(w http.ResponseWriter, r *http.Request) {
 
 func getAll(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("popa")
-	connStr := "user=postgres password=zopa123 dbname=postgres sslmode=disable host=db"
+	connStr := "user=postgres password=zopa123 dbname=postgres sslmode=disable host=localhost"
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		panic(err)
@@ -293,7 +294,7 @@ func setme(w http.ResponseWriter, r *http.Request) {
 		panic(err1)
 	}
 
-	connStr := "user=postgres password=zopa123 dbname=postgres sslmode=disable host=db"
+	connStr := "user=postgres password=zopa123 dbname=postgres sslmode=disable host=localhost"
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		panic(err)
@@ -339,7 +340,7 @@ func getAllLogin(w http.ResponseWriter, r *http.Request) {
 	str := strings.Split(fmt.Sprint(r.URL), "B")
 	str1 := strings.Split(str[1], "%")[0]
 
-	connStr := "user=postgres password=zopa123 dbname=postgres sslmode=disable host=db"
+	connStr := "user=postgres password=zopa123 dbname=postgres sslmode=disable host=localhost"
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		panic(err)
@@ -370,7 +371,15 @@ func getAllLogin(w http.ResponseWriter, r *http.Request) {
 
 var tpl = template.Must(template.ParseFiles("index.html"))
 
-var auth1 = template.Must(template.ParseFiles("aut.html"))
+var auth1 = template.Must(template.ParseFiles("message.html"))
+
+var redirect = template.Must(template.ParseFiles("aut.html"))
+
+type ViewData struct {
+	First_name string
+	Last_name  string
+	Message    []string
+}
 
 func Login(w http.ResponseWriter, r *http.Request) {
 	fmt.Print("jopa")
@@ -381,14 +390,14 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		tpl.Execute(w, nil)
 	} else {
 
-		connStr := "user=postgres password=zopa123 dbname=postgres sslmode=disable host=db"
+		connStr := "user=postgres password=zopa123 dbname=postgres sslmode=disable host=localhost"
 		db, err := sql.Open("postgres", connStr)
 		if err != nil {
 			panic(err)
 		}
 		defer db.Close()
 
-		rows, err := db.Query("SELECT id from patient where cookie = $1", send1[1])
+		rows, err := db.Query("SELECT first_name, last_name from patient where cookie = $1", send1[1])
 		if err != nil {
 			fmt.Println(rows)
 			panic(err)
@@ -396,18 +405,52 @@ func Login(w http.ResponseWriter, r *http.Request) {
 
 		patients := []patient{}
 		k := 0
+		var name string
+		var surname string
 		for rows.Next() {
 			p := patient{}
-			err := rows.Scan(&p.email)
+			err := rows.Scan(&p.first_name, &p.last_name)
 			if err != nil {
 				fmt.Println(err)
 				continue
 			}
 			patients = append(patients, p)
 			k = 1
+			fmt.Print(p.first_name)
+			fmt.Print("dasdasdasdasdweq")
+			name = p.first_name
+			surname = p.last_name
 		}
 		if k == 1 {
-			auth1.Execute(w, nil)
+
+			rows, err := db.Query("SELECT patient.first_name, patient.last_name, message from allmessages LEFT JOIN patient ON allmessages.id_sender = patient.id ORDER BY allmessages.id")
+			if err != nil {
+				fmt.Println(rows)
+				panic(err)
+			}
+			fmt.Println(rows)
+			patients := []patient{}
+			var str []string
+			for rows.Next() {
+				p := patient{}
+				err := rows.Scan(&p.first_name, &p.last_name, &p.message)
+				if err != nil {
+					fmt.Println(err)
+					continue
+				}
+				patients = append(patients, p)
+				k = 1
+
+				str = append(str, p.first_name+" "+p.last_name+": "+p.message)
+			}
+			fmt.Print(str)
+			data := ViewData{
+				First_name: name,
+				Last_name:  surname,
+				Message:    str,
+			}
+
+			auth1.Execute(w, data)
 		} else {
 		}
 	}
@@ -433,14 +476,14 @@ func auth(w http.ResponseWriter, r *http.Request) {
 	}
 	log2 := log1[0] + "@" + log1[1]
 	fmt.Println(log2)
-	connStr := "user=postgres password=zopa123 dbname=postgres sslmode=disable host=db"
+	connStr := "user=postgres password=zopa123 dbname=postgres sslmode=disable host=localhost"
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		panic(err)
 	}
 	defer db.Close()
 
-	rows, err := db.Query("SELECT id from patient where email = $1 and password = $2", log2, str[2])
+	rows, err := db.Query("SELECT id,first_name, last_name from patient where email = $1 and password = $2", log2, str[2])
 	if err != nil {
 		fmt.Println(rows)
 		panic(err)
@@ -450,9 +493,11 @@ func auth(w http.ResponseWriter, r *http.Request) {
 	patients := []patient{}
 	k := 0
 	var id string
+	//var name string
+	//var surname string
 	for rows.Next() {
 		p := patient{}
-		err := rows.Scan(&p.email)
+		err := rows.Scan(&p.email, &p.first_name, &p.last_name)
 		if err != nil {
 			fmt.Println(err)
 			continue
@@ -460,7 +505,10 @@ func auth(w http.ResponseWriter, r *http.Request) {
 		patients = append(patients, p)
 		k = 1
 		id = p.email
+		//name = p.first_name
+		//surname = p .last_name
 	}
+
 	if k == 0 {
 		http.NotFound(w, r)
 		return
@@ -483,30 +531,72 @@ func auth(w http.ResponseWriter, r *http.Request) {
 				panic(err)
 				fmt.Println(result)
 			}
+
 		}
-		auth1.Execute(w, nil)
+
+		//data := ViewData{
+		//	First_name: name,
+		//	Last_name: surname,
+		//}
+
+		//http.Redirect(w,r,"localhost:4000/login", 301)
+		Login(w, r)
+		//http.RedirectHandler("localhost:4000/login", 301)
+
+		//redirect.Execute(w, data)
 	}
 
+}
+
+func doctor(w http.ResponseWriter, r *http.Request) {
+	met := r.Method
+	fmt.Print(met)
+	if met == "POST" {
+		adddoctor(w, r)
+	}
+	if met == "GET" {
+		getAllDoctors(w, r)
+	}
+}
+
+func doctorId(w http.ResponseWriter, r *http.Request) {
+	met := r.Method
+	fmt.Print(met)
+	if met == "PUT" {
+		changedoctor(w, r)
+	}
+	if met == "DELETE" {
+		deletedoctor(w, r)
+	}
+}
+
+var mux = http.NewServeMux()
+
+func patientReq(w http.ResponseWriter, r *http.Request) {
+	met := r.Method
+	fmt.Print(met)
+	if met == "POST" {
+		setme(w, r)
+	}
+	if met == "GET" {
+		getAll(w, r)
+	}
 }
 
 func main() {
 	// Регистрируем два новых обработчика и соответствующие URL-шаблоны в
 	// маршрутизаторе servemux
 	fmt.Print("jopa")
-	mux := http.NewServeMux()
 	mux.HandleFunc("/", home)
-	mux.HandleFunc("/snippet", showSnippet)
-	mux.HandleFunc("/register", register)
-	mux.HandleFunc("/adddoctor", adddoctor)
-	mux.HandleFunc("/changedoctor/", changedoctor)
-	mux.HandleFunc("/deletedoctor/", deletedoctor)
-	mux.HandleFunc("/getalldoctors", getAllDoctors)
-	mux.HandleFunc("/getall", getAll)
-	mux.HandleFunc("/setme", setme)
 	mux.HandleFunc("/getall/", getAllLogin)
 	mux.HandleFunc("/login", Login)
 	mux.HandleFunc("/auth", auth)
+	mux.HandleFunc("/doctor", doctor)
+	mux.HandleFunc("/doctor/", doctorId)
+	mux.HandleFunc("/patient", patientReq)
+	mux.HandleFunc("/patient/register", register)
 	log.Println("Запуск веб-сервера на http://127.0.0.1:4000")
 	err := http.ListenAndServe(":4000", mux)
 	log.Fatal(err)
+	//dsadsad
 }
